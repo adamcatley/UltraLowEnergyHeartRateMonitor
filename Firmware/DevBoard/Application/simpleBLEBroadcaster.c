@@ -58,12 +58,11 @@
 #include "ICallBleAPIMSG.h"
 
 #include "util.h"
-#include "board_lcd.h"
 #include "Board.h"
    
 #include "simpleBLEBroadcaster.h"
 
-#include <ti/drivers/lcd/LCDDogm1286.h>
+//#include <ti/drivers/I2C.h>
 /*********************************************************************
  * MACROS
  */
@@ -233,7 +232,6 @@ static void SimpleBLEBroadcaster_processStateChangeEvt(gaprole_States_t newState
 
 static void SimpleBLEBroadcaster_stateChangeCB(gaprole_States_t newState);
 
-void SimpleBLEBroadcaster_initLCD(void);
 
 /*********************************************************************
  * PROFILE CALLBACKS
@@ -299,12 +297,7 @@ static void SimpleBLEBroadcaster_init(void)
   
   // Create an RTOS queue for message from profile to be sent to app.
   appMsgQueue = Util_constructQueue(&appMsg);
-  
-#ifdef TI_DRIVERS_LCD_INCLUDED
-  //Enable the 3V3 Domain and open LCD
-  Board_openLCD();
-#endif //TI_DRIVERS_LCD_INCLUDED
-  
+
   // Setup the GAP Broadcaster Role Profile
   {
     // For all hardware platforms, device starts advertising upon initialization
@@ -346,8 +339,6 @@ static void SimpleBLEBroadcaster_init(void)
   
   // Start the Device
   VOID GAPRole_StartDevice(&simpleBLEBroadcaster_BroadcasterCBs);
-  
-  LCD_WRITE_STRING("BLE Broadcaster", LCD_PAGE0);
 }
 
 /*********************************************************************
@@ -501,32 +492,32 @@ static void SimpleBLEBroadcaster_processStateChangeEvt(gaprole_States_t newState
         GAPRole_GetParameter(GAPROLE_BD_ADDR, ownAddress);
         
         // Display device address 
-        LCD_WRITE_STRING(Util_convertBdAddr2Str(ownAddress), LCD_PAGE1);
-        LCD_WRITE_STRING("Initialized", LCD_PAGE2);
+//        LCD_WRITE_STRING(Util_convertBdAddr2Str(ownAddress), LCD_PAGE1);
+//        LCD_WRITE_STRING("Initialized", LCD_PAGE2);
       }
       break;
       
     case GAPROLE_ADVERTISING:
       {
-        LCD_WRITE_STRING("Advertising", LCD_PAGE2);        
+//        LCD_WRITE_STRING("Advertising", LCD_PAGE2);
       }
       break;
 
     case GAPROLE_WAITING:
       {
-        LCD_WRITE_STRING("Waiting", LCD_PAGE2);       
+//        LCD_WRITE_STRING("Waiting", LCD_PAGE2);
       }
       break;          
 
     case GAPROLE_ERROR:
       {
-        LCD_WRITE_STRING("Error", LCD_PAGE2);         
+//        LCD_WRITE_STRING("Error", LCD_PAGE2);
       }
       break;      
       
     default:
       {
-        LCD_WRITE_STRING("", LCD_PAGE2);
+//        LCD_WRITE_STRING("", LCD_PAGE2);
       }
       break; 
   }

@@ -67,24 +67,14 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
-			<name>Application/board_lcd.c</name>
-			<type>1</type>
-			<locationURI>PARENT-5-ORG_PROJ_DIR/common/cc26xx/board_lcd.c</locationURI>
-		</link>
-		<link>
-			<name>Application/board_lcd.h</name>
-			<type>1</type>
-			<locationURI>PARENT-5-ORG_PROJ_DIR/common/cc26xx/board_lcd.h</locationURI>
-		</link>
-		<link>
 			<name>Application/simpleBLEBroadcaster.c</name>
 			<type>1</type>
-			<locationURI>PARENT-3-ORG_PROJ_DIR/Source/Application/simpleBLEBroadcaster.c</locationURI>
+			<locationURI>PROJECT_LOC/Application/simpleBLEBroadcaster.c</locationURI>
 		</link>
 		<link>
 			<name>Application/simpleBLEBroadcaster.h</name>
 			<type>1</type>
-			<locationURI>PARENT-3-ORG_PROJ_DIR/Source/Application/simpleBLEBroadcaster.h</locationURI>
+			<locationURI>PROJECT_LOC/Application/simpleBLEBroadcaster.h</locationURI>
 		</link>
 		<link>
 			<name>Application/util.c</name>
@@ -95,11 +85,6 @@
 			<name>Application/util.h</name>
 			<type>1</type>
 			<locationURI>PARENT-5-ORG_PROJ_DIR/common/cc26xx/util.h</locationURI>
-		</link>
-		<link>
-			<name>Drivers/LCD</name>
-			<type>2</type>
-			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
 			<name>Drivers/PIN</name>
@@ -214,7 +199,7 @@
 		<link>
 			<name>Startup/Board.c</name>
 			<type>1</type>
-			<locationURI>TI_RTOS_DRIVERS_BASE/ti/boards/SRF06EB/Board.c</locationURI>
+			<locationURI>PROJECT_LOC/Application/Board.c</locationURI>
 		</link>
 		<link>
 			<name>Startup/ccfg_appBLE.c</name>
@@ -245,26 +230,6 @@
 			<name>TOOLS/ccsLinkerDefines.cmd</name>
 			<type>1</type>
 			<locationURI>PARENT-3-ORG_PROJ_DIR/CCS/Config/ccsLinkerDefines.cmd</locationURI>
-		</link>
-		<link>
-			<name>Drivers/LCD/LCDDogm1286.c</name>
-			<type>1</type>
-			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/lcd/LCDDogm1286.c</locationURI>
-		</link>
-		<link>
-			<name>Drivers/LCD/LCDDogm1286.h</name>
-			<type>1</type>
-			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/lcd/LCDDogm1286.h</locationURI>
-		</link>
-		<link>
-			<name>Drivers/LCD/LCDDogm1286_util.c</name>
-			<type>1</type>
-			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/lcd/LCDDogm1286_util.c</locationURI>
-		</link>
-		<link>
-			<name>Drivers/LCD/LCDDogm1286_util.h</name>
-			<type>1</type>
-			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/lcd/LCDDogm1286_util.h</locationURI>
 		</link>
 		<link>
 			<name>Drivers/PIN/PIN.h</name>
