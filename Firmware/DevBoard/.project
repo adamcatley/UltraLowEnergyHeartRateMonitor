@@ -67,6 +67,16 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>Application/HeartRate.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/HeartRate.c</locationURI>
+		</link>
+		<link>
+			<name>Application/HeartRate.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/HeartRate.h</locationURI>
+		</link>
+		<link>
 			<name>Application/simpleBLEBroadcaster.c</name>
 			<type>1</type>
 			<locationURI>PROJECT_LOC/Application/simpleBLEBroadcaster.c</locationURI>
@@ -313,6 +323,10 @@
 		<variable>
 			<name>TI_RTOS_DRIVERS_BASE</name>
 			<value>file:/C:/ti/tirtos_simplelink_2_13_00_06/packages</value>
+		</variable>
+		<variable>
+			<name>copy_PARENT</name>
+			<value>$%7BTI_PRODUCTS_DIR%7D/simplelink/ble_cc26xx_2_00_00_42893/Projects/ble/SensorTag/CC26xx</value>
 		</variable>
 	</variableList>
 </projectDescription>

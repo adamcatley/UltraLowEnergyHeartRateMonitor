@@ -1,9 +1,11 @@
-/**
-  @file  main.c
-  @brief main entry of the BLE stack sample application.
+/*******************************************************************************
+  Filename:       HeartRate.h
+  Revised:        $Date: 2013-09-26 16:06:29 +0200 (to, 26 sep 2013) $
+  Revision:       $Revision: 35457 $
 
-  <!--
-  Copyright 2013 - 2015 Texas Instruments Incorporated. All rights reserved.
+  Description:
+
+  Copyright 2015  Texas Instruments Incorporated. All rights reserved.
 
   IMPORTANT: Your use of this Software is limited to those specific rights
   granted under the terms of a software license agreement between the user
@@ -19,7 +21,7 @@
   its documentation for any purpose.
 
   YOU FURTHER ACKNOWLEDGE AND AGREE THAT THE SOFTWARE AND DOCUMENTATION ARE
-  PROVIDED ``AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+  PROVIDED “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
   INCLUDING WITHOUT LIMITATION, ANY WARRANTY OF MERCHANTABILITY, TITLE,
   NON-INFRINGEMENT AND FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL
   TEXAS INSTRUMENTS OR ITS LICENSORS BE LIABLE OR OBLIGATED UNDER CONTRACT,
@@ -32,85 +34,43 @@
 
   Should you have any questions regarding your right to use this Software,
   contact Texas Instruments Incorporated at www.TI.com.
-  -->
-*/
+*******************************************************************************/
 
-#include <xdc/runtime/Error.h>
-#include <ti/sysbios/family/arm/cc26xx/Power.h>
-#include <ti/sysbios/BIOS.h>
+#ifndef HEARTRATE_H
+#define HEARTRATE_H
 
-#include "ICall.h"
-#include "bcomdef.h"
-#include "peripheral.h"
-
-#include "simpleBLEBroadcaster.h"
-#include "HeartRate.h"
-
-/* Header files required to enable instruction fetch cache */
-#include <inc/hw_memmap.h>
-#include <driverlib/vims.h>
-
-#ifndef USE_DEFAULT_USER_CFG
-
-#include "bleUserConfig.h"
-
-// BLE user defined configuration
-bleUserCfg_t user0Cfg = BLE_USER_CFG;
-
-#endif // USE_DEFAULT_USER_CFG
-
-/**
- * Exception handler
- */
-void exceptionHandler()
+#ifdef __cplusplus
+extern "C"
 {
-    volatile char i = 1;
-    while(i);
-}
+#endif
 
-/*
- *  ======== main ========
+/*********************************************************************
+ * INCLUDES
  */
-int main()
-{
-  PIN_init(BoardGpioInitTable);
 
-#ifndef POWER_SAVING
-    /* Set constraints for Standby, powerdown and idle mode */
-    Power_setConstraint(Power_SB_DISALLOW);
-    Power_setConstraint(Power_IDLE_PD_DISALLOW);
-#endif // POWER_SAVING
-    
-    /* Initialize ICall module */
-    ICall_init();
+   
+/*********************************************************************
+ * CONSTANTS
+ */
   
-    /* Start tasks of external images - Priority 5 */
-    ICall_createRemoteTasks();
-    
-    /* Kick off profile - Priority 3 */
-    GAPRole_createTask();
-    
-    /* Kick off application - Priority 1 */
-    SimpleBLEBroadcaster_createTask();
-    HeartRate_createTask();
-
-    BIOS_start();     /* enable interrupts and start SYS/BIOS */
-    
-    return 0;
-}
-
-/**
- * Error handled to be hooked into TI-RTOS
+/*********************************************************************
+ * MACROS
  */
-Void smallErrorHook(Error_Block *eb)
-{
-  for (;;);
-}
 
-/**
- * HAL assert handler required by OSAL memory module.
+/*********************************************************************
+ * FUNCTIONS
  */
-void halAssertHandler(void)
-{
-  for (;;);
+  
+/*
+ * Create the heart rate monitor task
+ */
+void HeartRate_createTask(void);
+
+/*********************************************************************
+*********************************************************************/
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* HEARTRATE_H */

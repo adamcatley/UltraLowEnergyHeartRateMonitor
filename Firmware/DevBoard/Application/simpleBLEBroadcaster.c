@@ -40,6 +40,7 @@
 /*********************************************************************
  * INCLUDES
  */
+#include <xdc/runtime/System.h>
 
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Clock.h>
@@ -352,6 +353,8 @@ static void SimpleBLEBroadcaster_init(void)
  */
 static void SimpleBLEBroadcaster_taskFxn(UArg a0, UArg a1)
 {
+	System_printf("BLE Broadcaster task started\n");
+	System_flush();
   // Initialize application
   SimpleBLEBroadcaster_init();
   
