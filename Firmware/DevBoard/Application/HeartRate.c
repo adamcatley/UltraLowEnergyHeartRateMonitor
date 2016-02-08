@@ -46,6 +46,7 @@
 #include <xdc/runtime/System.h>
 
 #include "HeartRate.h"
+#include "MAX30100.h"
 
 #include "string.h"
 #include <ti/sysbios/knl/Semaphore.h>
@@ -56,7 +57,7 @@
 //#include <ti/drivers/I2C.h>
 //
 ///* Example/Board Header files */
-//#include "Board.h"
+#include "Board.h"
 
 /*********************************************************************
  * MACROS
@@ -99,13 +100,28 @@
 static Task_Struct HeartRateTask;
 static Char HeartRateTaskStack[HEART_RATE_TASK_STACK_SIZE];
 
-// Parameters
+//Pins
+const PIN_Config pinListInt[] = {
+       Board_MAX_INT | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE,
+       Board_BUTTON | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE,
+	   //Board_INA_INT | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE,
+       PIN_TERMINATE
+};
+PIN_State  intPinState;
+PIN_Handle intPinHandle;
+static volatile uint8_t intPinEvent = 0;
+
+// MAX30100
+static int sampleCount = 0;
+static const int numSamples = 50 * 10; //50 * NUM_SECONDS
+uint16_t IRSamples[numSamples];
 
 
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
 static void HeartRate_TaskFxn(UArg a0, UArg a1);
+void HeartRateIntHandler(PIN_Handle handle, PIN_Id pinId);
 
 /*********************************************************************
  * PUBLIC FUNCTIONS
@@ -148,9 +164,62 @@ static void HeartRateTaskInit(void)
 	System_printf("Heart rate task started\n");
 	System_flush();
 
+	//Initialise pins
+	intPinHandle = PIN_open(&intPinState, pinListInt);
+	if (!intPinHandle) {
+	   System_abort("Error opening pins");
+	}
+	PIN_registerIntCb(intPinHandle, HeartRateIntHandler);
+	PIN_setInterrupt(intPinHandle, Board_MAX_INT | PIN_IRQ_NEGEDGE);
+	PIN_setInterrupt(intPinHandle, Board_BUTTON | PIN_IRQ_NEGEDGE);
+	//PIN_setInterrupt(hStateInt, Board_INA_INT | PIN_IRQ_NEGEDGE);
+
+
   // Initilialize the module state variables
   
   // Initialise driver
+	MAX30100_Initialise();
+	MAX30100_SetSampleRate(MAX_SPO2_50SPS);
+	MAX30100_SetPulseWidth(MAX_SPO2_1600US);
+	MAX30100_SetIRCurrent(MAX_IR_LED_40MA);
+	MAX30100_EnableInterrupt(MAX_INT_HR_RDY);
+
+}
+
+//Handles pin interrupts for MAX30100 and othe devices
+void HeartRateIntHandler(PIN_Handle handle, PIN_Id pinId){
+	if (pinId == Board_MAX_INT)	intPinEvent = HR_EVENT_MAX;
+	else if (pinId == Board_INA_INT) intPinEvent = HR_EVENT_INA;
+	else if (pinId == Board_BUTTON) intPinEvent = HR_EVENT_BUTTON;
+	else intPinEvent = HR_EVENT_UNKNOWN;
+}
+
+void ProcessIntEvent(){//TODO: make queue
+	uint8_t eventID = intPinEvent;//make copy as volatile
+	intPinEvent = 0; //reset flag immediately
+	switch (eventID) {
+		case HR_EVENT_MAX://MAX
+			if(MAX30100_IsHRReady()){
+				IRSamples[sampleCount] = MAX30100_ReadHROnly();
+				sampleCount++;
+				if (sampleCount >= numSamples){
+					sampleCount = 0;
+					MAX30100_FlushFIFO();
+				}
+			}
+			break;
+		case HR_EVENT_INA:
+			break;
+		case HR_EVENT_BUTTON: //Button
+			MAX30100_SetHRMode();
+			break;
+		case HR_EVENT_UNKNOWN:
+			System_printf("Unexpected interrupt\n");
+			System_flush();
+			break;
+		default:
+			break;
+	}
 }
 
 /*********************************************************************
@@ -170,7 +239,7 @@ static void HeartRate_TaskFxn(UArg a0, UArg a1)
   // Task loop
   while (1)
   {
-
+	  if (intPinEvent != 0) ProcessIntEvent();
 
 	  //delay_ms(SENSOR_DEFAULT_PERIOD);
   }

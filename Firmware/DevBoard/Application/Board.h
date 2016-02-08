@@ -102,8 +102,8 @@ extern PIN_Config BoardGpioInitTable[];
 #define Board_AFE_DIAG_END                  IOID_28
 #define Board_AFE_PDNn                      IOID_29
 /* I2C */
-#define Board_I2C_SDA                       IOID_14
-#define Board_I2C_SCL                       IOID_15
+#define Board_I2C_SDA                       IOID_15
+#define Board_I2C_SCL                       IOID_14
 #define Board_MAX_INT                       IOID_30
 #define Board_INA_INT                       IOID_18
 /* GPIOs */

@@ -6,6 +6,9 @@
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.Texas Instruments XDS100v3 USB Debug Probe/Cortex_M3_0" value="ULE_HRM_DevBoard"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_TARGET_CONFIG" value="${target_config_active_default:ULE_HRM_DevBoard}"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.Texas Instruments XDS100v3 USB Debug Probe/Cortex_M3_0" value="C:/dev\TI\ccsv6\workspace\UltraLowEnergyHeartRateMonitor\Firmware\DevBoard\FlashROM\ULE_HRM_DevBoard.out"/>
+<mapAttribute key="com.ti.ccstudio.debug.ui.displayFormats">
+<mapEntry key="Texas Instruments XDS100v3 USB Debug Probe/Cortex_M3_0@##separator##@0" value="16-Bit UnSigned Int"/>
+</mapAttribute>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
 <listEntry value="/ULE_HRM_DevBoard"/>
 </listAttribute>

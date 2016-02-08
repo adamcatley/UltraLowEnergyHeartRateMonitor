@@ -355,6 +355,7 @@ static void SimpleBLEBroadcaster_taskFxn(UArg a0, UArg a1)
 {
 	System_printf("BLE Broadcaster task started\n");
 	System_flush();
+
   // Initialize application
   SimpleBLEBroadcaster_init();
   

@@ -69,22 +69,32 @@
 		<link>
 			<name>Application/HeartRate.c</name>
 			<type>1</type>
-			<locationURI>PROJECT_LOC/Application/HeartRate.c</locationURI>
+			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/HeartRate.c</locationURI>
 		</link>
 		<link>
 			<name>Application/HeartRate.h</name>
 			<type>1</type>
-			<locationURI>PROJECT_LOC/Application/HeartRate.h</locationURI>
+			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/HeartRate.h</locationURI>
+		</link>
+		<link>
+			<name>Application/MAX30100.c</name>
+			<type>1</type>
+			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/MAX30100.c</locationURI>
+		</link>
+		<link>
+			<name>Application/MAX30100.h</name>
+			<type>1</type>
+			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/MAX30100.h</locationURI>
 		</link>
 		<link>
 			<name>Application/simpleBLEBroadcaster.c</name>
 			<type>1</type>
-			<locationURI>PROJECT_LOC/Application/simpleBLEBroadcaster.c</locationURI>
+			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/simpleBLEBroadcaster.c</locationURI>
 		</link>
 		<link>
 			<name>Application/simpleBLEBroadcaster.h</name>
 			<type>1</type>
-			<locationURI>PROJECT_LOC/Application/simpleBLEBroadcaster.h</locationURI>
+			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/simpleBLEBroadcaster.h</locationURI>
 		</link>
 		<link>
 			<name>Application/util.c</name>
@@ -95,6 +105,11 @@
 			<name>Application/util.h</name>
 			<type>1</type>
 			<locationURI>PARENT-5-ORG_PROJ_DIR/common/cc26xx/util.h</locationURI>
+		</link>
+		<link>
+			<name>Drivers/I2C</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
 			<name>Drivers/PIN</name>
@@ -242,6 +257,26 @@
 			<locationURI>PARENT-3-ORG_PROJ_DIR/CCS/Config/ccsLinkerDefines.cmd</locationURI>
 		</link>
 		<link>
+			<name>Drivers/I2C/I2C.c</name>
+			<type>1</type>
+			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/I2C.c</locationURI>
+		</link>
+		<link>
+			<name>Drivers/I2C/I2C.h</name>
+			<type>1</type>
+			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/I2C.h</locationURI>
+		</link>
+		<link>
+			<name>Drivers/I2C/I2CCC26XX.c</name>
+			<type>1</type>
+			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/i2c/I2CCC26XX.c</locationURI>
+		</link>
+		<link>
+			<name>Drivers/I2C/I2CCC26XX.h</name>
+			<type>1</type>
+			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/i2c/I2CCC26XX.h</locationURI>
+		</link>
+		<link>
 			<name>Drivers/PIN/PIN.h</name>
 			<type>1</type>
 			<locationURI>TI_RTOS_DRIVERS_BASE/ti/drivers/PIN.h</locationURI>
@@ -323,6 +358,22 @@
 		<variable>
 			<name>TI_RTOS_DRIVERS_BASE</name>
 			<value>file:/C:/ti/tirtos_simplelink_2_13_00_06/packages</value>
+		</variable>
+		<variable>
+			<name>TI_RTOS_DRIVERS_BASE1</name>
+			<value>$%7BTI_PRODUCTS_DIR%7D/tirtos_simplelink_2_11_01_09/packages</value>
+		</variable>
+		<variable>
+			<name>TI_RTOS_DRIVERS_BASE12</name>
+			<value>$%7BTI_RTOS_DRIVERS_BASE1%7D</value>
+		</variable>
+		<variable>
+			<name>TI_RTOS_DRIVERS_BASE123</name>
+			<value>$%7BTI_RTOS_DRIVERS_BASE12%7D</value>
+		</variable>
+		<variable>
+			<name>TI_RTOS_DRIVERS_BASE1234</name>
+			<value>$%7BTI_RTOS_DRIVERS_BASE12%7D</value>
 		</variable>
 		<variable>
 			<name>copy_PARENT</name>

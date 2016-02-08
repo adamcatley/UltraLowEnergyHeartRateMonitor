@@ -53,6 +53,12 @@ extern "C"
  * CONSTANTS
  */
   
+#define HR_EVENT_MAX 1
+#define HR_EVENT_INA 2
+#define HR_EVENT_BUTTON 3
+#define HR_EVENT_UNKNOWN 0xff
+
+
 /*********************************************************************
  * MACROS
  */

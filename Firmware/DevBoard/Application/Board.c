@@ -74,6 +74,10 @@ PIN_Config BoardGpioInitTable[] = {
 	Board_GPIO_2		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,     /* GPIO use initially output */
 	Board_GPIO_3		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,     /* GPIO use initially output */
 
+	Board_MAX_INT | PIN_INPUT_EN | PIN_NOPULL,
+	Board_BUTTON | PIN_INPUT_EN | PIN_NOPULL,
+	//Board_INA_INT | PIN_INPUT_EN | PIN_NOPULL,
+
     PIN_TERMINATE                                                                               /* Terminate list                  */
 };
 /*============================================================================*/
