@@ -48,9 +48,17 @@
 #include "HeartRate.h"
 #include "MAX30100.h"
 
+#ifdef DISPLAY
+#include "Display.h"
+#endif
+
 #include "string.h"
 #include <ti/sysbios/knl/Semaphore.h>
 #include <ti/sysbios/knl/Task.h>
+#include <ti/sysbios/knl/Clock.h>
+
+#include <ICall.h>
+#include "util.h"
 
 ///* TI-RTOS Header files */
 //#include <ti/drivers/PIN.h>
@@ -100,10 +108,13 @@
 static Task_Struct HeartRateTask;
 static Char HeartRateTaskStack[HEART_RATE_TASK_STACK_SIZE];
 
+// Clock instances for internal periodic events.
+static Clock_Struct periodicClock;
+
 //Pins
 const PIN_Config pinListInt[] = {
        Board_MAX_INT | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE,
-       Board_BUTTON | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE,
+       Board_BUTTON | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_POSEDGE | PIN_HYSTERESIS,
 	   //Board_INA_INT | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE,
        PIN_TERMINATE
 };
@@ -113,8 +124,11 @@ static volatile uint8_t intPinEvent = 0;
 
 // MAX30100
 static int sampleCount = 0;
-static const int numSamples = 50 * 10; //50 * NUM_SECONDS
-uint16_t IRSamples[numSamples];
+static const int sampleRate = 10;//Hz
+static const int sampleDuration = 30;//seconds
+static const int samplePeriod = 1000 / sampleRate;//ms
+static const int numSamples = sampleRate * sampleDuration;
+static uint16_t IRSamples[numSamples];
 
 
 /*********************************************************************
@@ -122,6 +136,9 @@ uint16_t IRSamples[numSamples];
  */
 static void HeartRate_TaskFxn(UArg a0, UArg a1);
 void HeartRateIntHandler(PIN_Handle handle, PIN_Id pinId);
+
+static void HeartRate_performPeriodicTask(void);
+static void HeartRate_clockHandler(UArg arg);
 
 /*********************************************************************
  * PUBLIC FUNCTIONS
@@ -167,23 +184,30 @@ static void HeartRateTaskInit(void)
 	//Initialise pins
 	intPinHandle = PIN_open(&intPinState, pinListInt);
 	if (!intPinHandle) {
-	   System_abort("Error opening pins");
+	   System_abort("Error opening pins for HeartRate task\n");
 	}
 	PIN_registerIntCb(intPinHandle, HeartRateIntHandler);
 	PIN_setInterrupt(intPinHandle, Board_MAX_INT | PIN_IRQ_NEGEDGE);
-	PIN_setInterrupt(intPinHandle, Board_BUTTON | PIN_IRQ_NEGEDGE);
+	PIN_setInterrupt(intPinHandle, Board_BUTTON | PIN_IRQ_POSEDGE);
 	//PIN_setInterrupt(hStateInt, Board_INA_INT | PIN_IRQ_NEGEDGE);
 
 
   // Initilialize the module state variables
   
-  // Initialise driver
+  // Initialise drivers
 	MAX30100_Initialise();
 	MAX30100_SetSampleRate(MAX_SPO2_50SPS);
 	MAX30100_SetPulseWidth(MAX_SPO2_1600US);
 	MAX30100_SetIRCurrent(MAX_IR_LED_40MA);
 	MAX30100_EnableInterrupt(MAX_INT_HR_RDY);
+	MAX30100_Shutdown(); //Keep asleep once configured until used
 
+#ifdef DISPLAY
+	Display_Initialise();
+#endif
+
+	  // Create one-shot clocks for internal periodic events.
+	  Util_constructClock(&periodicClock, HeartRate_clockHandler, samplePeriod, 0, false, 0);
 }
 
 //Handles pin interrupts for MAX30100 and othe devices
@@ -197,6 +221,9 @@ void HeartRateIntHandler(PIN_Handle handle, PIN_Id pinId){
 void ProcessIntEvent(){//TODO: make queue
 	uint8_t eventID = intPinEvent;//make copy as volatile
 	intPinEvent = 0; //reset flag immediately
+
+	int i = 0;
+
 	switch (eventID) {
 		case HR_EVENT_MAX://MAX
 			if(MAX30100_IsHRReady()){
@@ -205,13 +232,37 @@ void ProcessIntEvent(){//TODO: make queue
 				if (sampleCount >= numSamples){
 					sampleCount = 0;
 					MAX30100_FlushFIFO();
+					MAX30100_Shutdown();
+					Util_stopClock(&periodicClock);//stop sampling clock
+					System_printf("Finished sampling\n");
+					System_flush();
+				}
+				else {
+					MAX30100_Shutdown();
 				}
 			}
 			break;
 		case HR_EVENT_INA:
 			break;
 		case HR_EVENT_BUTTON: //Button
-			MAX30100_SetHRMode();
+#ifdef DISPLAY
+			for (i = 0; i < 16; i++){
+				Display_SetRow(i, DISPLAY_COLOUR_WHITE);
+				Display_SetRow(i+16, DISPLAY_COLOUR_BLACK);
+				Display_SetRow(i+32, DISPLAY_COLOUR_BLUE);
+				Display_SetRow(i+48, DISPLAY_COLOUR_CYAN);
+				Display_SetRow(i+64, DISPLAY_COLOUR_GREEN);
+				Display_SetRow(i+80, DISPLAY_COLOUR_MAGENTA);
+				Display_SetRow(i+96, DISPLAY_COLOUR_RED);
+				Display_SetRow(i+112, DISPLAY_COLOUR_YELLOW);
+			}
+
+			Display_Update();
+#endif
+			Util_startClock(&periodicClock);//start sampling clock
+			break;
+		case HR_EVENT_PERIODIC:
+			HeartRate_performPeriodicTask();
 			break;
 		case HR_EVENT_UNKNOWN:
 			System_printf("Unexpected interrupt\n");
@@ -245,6 +296,16 @@ static void HeartRate_TaskFxn(UArg a0, UArg a1)
   }
 }
 
+
+static void HeartRate_performPeriodicTask(void){
+	Util_startClock(&periodicClock);
+	MAX30100_SetHRMode();//start sensor sampling
+
+}
+
+static void HeartRate_clockHandler(UArg arg){
+	intPinEvent = HR_EVENT_PERIODIC;
+}
 
 /*********************************************************************
 *********************************************************************/
