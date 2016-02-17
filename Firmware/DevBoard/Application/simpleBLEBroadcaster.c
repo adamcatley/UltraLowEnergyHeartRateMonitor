@@ -40,8 +40,12 @@
 /*********************************************************************
  * INCLUDES
  */
+/* XDCtools Header files */
+#include <xdc/std.h>
+#include <xdc/cfg/global.h>
 #include <xdc/runtime/System.h>
 
+#include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Semaphore.h>
@@ -57,6 +61,7 @@
 
 #include "osal_snv.h"
 #include "ICallBleAPIMSG.h"
+#include <ICall.h>
 
 #include "util.h"
 #include "Board.h"
@@ -72,8 +77,8 @@
  * CONSTANTS
  */
 
-// What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
-#define DEFAULT_ADVERTISING_INTERVAL          160
+// What is the advertising interval when device is discoverable (units of 625us, 320=200ms)
+#define DEFAULT_ADVERTISING_INTERVAL          320
 
 // Task configuration
 #define SBB_TASK_PRIORITY                     1
@@ -83,8 +88,9 @@
 #endif
   
 // Internal Events for RTOS application
-#define SBB_STATE_CHANGE_EVT                  0x0001
+#define SBB_STATE_CHANGE_EVT				  0x0001
 #define SBB_KEY_CHANGE_EVT                    0x0002
+#define HR_PERIODIC_EVT						  0x0004
 
 /*********************************************************************
  * TYPEDEFS
@@ -122,42 +128,12 @@ static ICall_Semaphore sem;
 static Queue_Struct appMsg;
 static Queue_Handle appMsgQueue;
 
+// Clock instances for internal periodic events.
+static Clock_Struct periodicClock;
+
 // Task configuration
 Task_Struct sbbTask;
 Char sbbTaskStack[SBB_TASK_STACK_SIZE];
-
-// GAP - SCAN RSP data (max size = 31 bytes)
-static uint8 scanRspData[] =
-{
-  // complete name
-  0x15,   // length of this data
-  GAP_ADTYPE_LOCAL_NAME_COMPLETE,
-  0x53,   // 'S'
-  0x69,   // 'i'
-  0x6d,   // 'm'
-  0x70,   // 'p'
-  0x6c,   // 'l'
-  0x65,   // 'e'
-  0x42,   // 'B'
-  0x4c,   // 'L'
-  0x45,   // 'E'
-  0x42,   // 'B'
-  0x72,   // 'r'
-  0x6f,   // 'o'
-  0x61,   // 'a'
-  0x64,   // 'd'
-  0x63,   // 'c'
-  0x61,   // 'a'
-  0x73,   // 's'
-  0x74,   // 't'
-  0x65,   // 'e'
-  0x72,   // 'r'
-
-  // Tx power level
-  0x02,   // length of this data
-  GAP_ADTYPE_POWER_LEVEL,
-  0       // 0dBm  
-};
 
 // GAP - Advertisement data (max size = 31 bytes, though this is
 // best kept short to conserve power while advertisting)
@@ -168,56 +144,19 @@ static uint8 advertData[] =
   // discoverable mode (advertises indefinitely)
   0x02,   // length of this data
   GAP_ADTYPE_FLAGS,
-  GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
-  
-#ifndef BEACON_FEATURE
+  GAP_ADTYPE_FLAGS_GENERAL,
+  //GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
   
   // three-byte broadcast of the data "1 2 3"
-  0x04,   // length of this data including the data type byte
-  GAP_ADTYPE_MANUFACTURER_SPECIFIC, // manufacturer specific adv data type
-  1,
-  2,
-  3
-
-#else
-    
-  // 25 byte beacon advertisement data
-  // Preamble: Company ID - 0x000D for TI, refer to https://www.bluetooth.org/en-us/specification/assigned-numbers/company-identifiers
-  // Data type: Beacon (0x02)
-  // Data length: 0x15
-  // UUID: 00000000-0000-0000-0000-000000000000 (null beacon)
-  // Major: 1 (0x0001)
-  // Minor: 1 (0x0001)
-  // Measured Power: -59 (0xc5)
-  0x1A, // length of this data including the data type byte
+  0x07,   // length of this data including the data type byte
   GAP_ADTYPE_MANUFACTURER_SPECIFIC, // manufacturer specific adv data type
   0x0D, // Company ID - Fixed
   0x00, // Company ID - Fixed
-  0x02, // Data Type - Fixed
-  0x15, // Data Length - Fixed
-  0x00, // UUID - Variable based on different use cases/applications
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // UUID
-  0x00, // Major
-  0x01, // Major
-  0x00, // Minor
-  0x01, // Minor
-  0xc5  // Power - The 2's complement of the calibrated Tx Power
-    
-#endif // !BEACON_FEATURE
+  1,
+  2,
+  3,
+  4
+
 };
 
 /*********************************************************************
@@ -233,6 +172,9 @@ static void SimpleBLEBroadcaster_processStateChangeEvt(gaprole_States_t newState
 
 static void SimpleBLEBroadcaster_stateChangeCB(gaprole_States_t newState);
 
+static void HeartRate_performPeriodicTask(void);
+static void HeartRate_clockHandler(UArg arg);
+static void HeartRate_enqueueMsg(uint8_t event);
 
 /*********************************************************************
  * PROFILE CALLBACKS
@@ -299,9 +241,11 @@ static void SimpleBLEBroadcaster_init(void)
   // Create an RTOS queue for message from profile to be sent to app.
   appMsgQueue = Util_constructQueue(&appMsg);
 
+  // Create one-shot clocks for internal periodic events.
+  Util_constructClock(&periodicClock, HeartRate_clockHandler, 2000, 0, true, HR_PERIODIC_EVT);
+
   // Setup the GAP Broadcaster Role Profile
   {
-    // For all hardware platforms, device starts advertising upon initialization
     uint8_t initial_advertising_enable = TRUE;
 
     // By setting this to zero, the device will go into the waiting state after
@@ -309,22 +253,14 @@ static void SimpleBLEBroadcaster_init(void)
     // until the enabler is set back to TRUE
     uint16_t gapRole_AdvertOffTime = 0;
       
-#ifndef BEACON_FEATURE
-    uint8_t advType = GAP_ADTYPE_ADV_SCAN_IND; // use scannable undirected adv
-#else
     uint8_t advType = GAP_ADTYPE_ADV_NONCONN_IND; // use non-connectable adv
-#endif // !BEACON_FEATURE
     
     // Set the GAP Role Parameters
-    GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), 
-                         &initial_advertising_enable);
-    GAPRole_SetParameter(GAPROLE_ADVERT_OFF_TIME, sizeof(uint16_t), 
-                         &gapRole_AdvertOffTime);
-    
-    GAPRole_SetParameter(GAPROLE_SCAN_RSP_DATA, sizeof (scanRspData), 
-                         scanRspData);
-    GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advertData), advertData);
+    GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
+    GAPRole_SetParameter(GAPROLE_ADVERT_OFF_TIME, sizeof(uint16_t), &gapRole_AdvertOffTime);
 
+    //GAPRole_SetParameter(GAPROLE_SCAN_RSP_DATA, sizeof (scanRspData), scanRspData);
+    GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advertData), advertData);
     GAPRole_SetParameter(GAPROLE_ADV_EVENT_TYPE, sizeof(uint8_t), &advType);
   }
 
@@ -338,6 +274,9 @@ static void SimpleBLEBroadcaster_init(void)
     GAP_SetParamValue(TGAP_GEN_DISC_ADV_INT_MAX, advInt);
   }
   
+  //HCI_EXT_AdvEventNoticeCmd(selfEntity, 0xf0); //Creates an event in  SimpleBLEBroadcaster_processStackMsg with event = 255 after each adv packet?
+  //HCI_EXT_SetTxPowerCmd(pwrLvls[TX_POWER_MODE_MEDIUM]);
+
   // Start the Device
   VOID GAPRole_StartDevice(&simpleBLEBroadcaster_BroadcasterCBs);
 }
@@ -423,6 +362,8 @@ static void SimpleBLEBroadcaster_processStackMsg(ICall_Hdr *pMsg)
   switch (pMsg->event)
   {
     default:
+    	System_printf("StackMsg: %d, status:%d\n", pMsg->event, pMsg->status);
+    	System_flush();
       // do nothing
       break;
   }
@@ -445,8 +386,13 @@ static void SimpleBLEBroadcaster_processAppMsg(sbbEvt_t *pMsg)
       SimpleBLEBroadcaster_processStateChangeEvt((gaprole_States_t)pMsg->
                                                  hdr.state);
       break;
+    case HR_PERIODIC_EVT:
+      HeartRate_performPeriodicTask();
+      break;
       
     default:
+      	System_printf("Unexpected AppMsg: %d\n", pMsg->hdr.event);
+      	System_flush();
       // Do nothing.
       break;
   }
@@ -495,38 +441,70 @@ static void SimpleBLEBroadcaster_processStateChangeEvt(gaprole_States_t newState
         
         GAPRole_GetParameter(GAPROLE_BD_ADDR, ownAddress);
         
-        // Display device address 
-//        LCD_WRITE_STRING(Util_convertBdAddr2Str(ownAddress), LCD_PAGE1);
-//        LCD_WRITE_STRING("Initialized", LCD_PAGE2);
+        System_printf("Intialised: %s\n", Util_convertBdAddr2Str(ownAddress));
       }
       break;
       
     case GAPROLE_ADVERTISING:
       {
-//        LCD_WRITE_STRING("Advertising", LCD_PAGE2);
+          System_printf("Advertising\n");
       }
       break;
 
     case GAPROLE_WAITING:
       {
-//        LCD_WRITE_STRING("Waiting", LCD_PAGE2);
+          System_printf("Waiting\n");
       }
       break;          
 
     case GAPROLE_ERROR:
       {
-//        LCD_WRITE_STRING("Error", LCD_PAGE2);
+          System_printf("BLE Error\n");
       }
       break;      
       
     default:
       {
-//        LCD_WRITE_STRING("", LCD_PAGE2);
+          System_printf("Unknown state event: %d\n", newState);
       }
       break; 
   }
+  System_flush();
 }
 
+static void HeartRate_clockHandler(UArg arg){
+	HeartRate_enqueueMsg(HR_PERIODIC_EVT);
+}
+
+static void HeartRate_performPeriodicTask(void){
+	Util_startClock(&periodicClock);
+	advertData[10]++;
+	GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advertData), advertData);
+}
+
+/*********************************************************************
+ * @fn      HeartRate_enqueueMsg
+ *
+ * @brief   Creates a message and puts the message in RTOS queue.
+ *
+ * @param   event  - message event.
+ * @param   status - message status.
+ *
+ * @return  None.
+ */
+static void HeartRate_enqueueMsg(uint8_t event)
+{
+  sbbEvt_t *pMsg;
+
+  // Create dynamic pointer to message.
+  if (pMsg = ICall_malloc(sizeof(sbbEvt_t)))
+  {
+    pMsg->hdr.event= event;
+
+    // Enqueue the message.
+    Util_enqueueMsg(appMsgQueue, sem, (uint8*)pMsg);
+  }
+}
 
 /*********************************************************************
 *********************************************************************/
