@@ -53,6 +53,11 @@ extern "C"
  * CONSTANTS
  */
 
+// Internal Events for RTOS application
+#define SBB_STATE_CHANGE_EVT				  0x0001
+#define SBB_KEY_CHANGE_EVT                    0x0002
+#define HR_PERIODIC_EVT						  0x0004
+#define HR_INTERNAL_EVT						  0x0008
 /*********************************************************************
  * MACROS
  */
@@ -65,6 +70,9 @@ extern "C"
  * Task creation function for the Simple BLE Broadcaster.
  */
 extern void SimpleBLEBroadcaster_createTask(void);
+void HeartRate_enqueueMsg(uint8_t event);
+void SimpleBLEBroadcaster_SetAdvertisingData(uint8_t index, uint8_t value, uint8_t update);
+void SimpleBLEBroadcaster_SetAdvertisingEnabled(uint8_t enable);
 
 /*********************************************************************
 *********************************************************************/

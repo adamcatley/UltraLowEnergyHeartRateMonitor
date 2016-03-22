@@ -64,9 +64,14 @@
 #include <ICall.h>
 
 #include "util.h"
+#ifdef WEARABLE
+#include "Board_WEARABLE.h"
+#else
 #include "Board.h"
+#endif
    
 #include "simpleBLEBroadcaster.h"
+#include "HeartRate.h"
 
 //#include <ti/drivers/I2C.h>
 /*********************************************************************
@@ -87,10 +92,6 @@
 #define SBB_TASK_STACK_SIZE                   600
 #endif
   
-// Internal Events for RTOS application
-#define SBB_STATE_CHANGE_EVT				  0x0001
-#define SBB_KEY_CHANGE_EVT                    0x0002
-#define HR_PERIODIC_EVT						  0x0004
 
 /*********************************************************************
  * TYPEDEFS
@@ -137,7 +138,7 @@ Char sbbTaskStack[SBB_TASK_STACK_SIZE];
 
 // GAP - Advertisement data (max size = 31 bytes, though this is
 // best kept short to conserve power while advertisting)
-static uint8 advertData[] = 
+static uint8 advertData[] =
 { 
   // Flags; this sets the device to use limited discoverable
   // mode (advertises for 30 seconds at a time) instead of general
@@ -148,16 +149,26 @@ static uint8 advertData[] =
   //GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED,
   
   // three-byte broadcast of the data "1 2 3"
-  0x07,   // length of this data including the data type byte
+  0x10,   // length of this data including the data type byte
   GAP_ADTYPE_MANUFACTURER_SPECIFIC, // manufacturer specific adv data type
   0x0D, // Company ID - Fixed
   0x00, // Company ID - Fixed
-  1,
-  2,
-  3,
-  4
-
+  0, //Packet count lower
+  0, //Packet count upper
+  0, //Sample rate (Hz)
+  0, //Sample 1 lower
+  0, //Sample 1 upper
+  0, //Sample 2 lower
+  0, //Sample 2 upper
+  0, //Sample 3 lower
+  0, //Sample 3 upper
+  0, //Sample 4 lower
+  0, //Sample 4 upper
+  0, //Sample 5 lower
+  0, //Sample 5 upper
 };
+
+static uint8_t isAdvertisingEnabled = false;
 
 /*********************************************************************
  * LOCAL FUNCTIONS
@@ -174,7 +185,6 @@ static void SimpleBLEBroadcaster_stateChangeCB(gaprole_States_t newState);
 
 static void HeartRate_performPeriodicTask(void);
 static void HeartRate_clockHandler(UArg arg);
-static void HeartRate_enqueueMsg(uint8_t event);
 
 /*********************************************************************
  * PROFILE CALLBACKS
@@ -242,11 +252,11 @@ static void SimpleBLEBroadcaster_init(void)
   appMsgQueue = Util_constructQueue(&appMsg);
 
   // Create one-shot clocks for internal periodic events.
-  Util_constructClock(&periodicClock, HeartRate_clockHandler, 2000, 0, true, HR_PERIODIC_EVT);
+  //Util_constructClock(&periodicClock, HeartRate_clockHandler, 2000, 0, true, HR_PERIODIC_EVT);
 
   // Setup the GAP Broadcaster Role Profile
   {
-    uint8_t initial_advertising_enable = TRUE;
+    uint8_t initial_advertising_enable = FALSE;
 
     // By setting this to zero, the device will go into the waiting state after
     // being discoverable for 30.72 second, and will not being advertising again
@@ -297,6 +307,8 @@ static void SimpleBLEBroadcaster_taskFxn(UArg a0, UArg a1)
 
   // Initialize application
   SimpleBLEBroadcaster_init();
+  HeartRateInit();
+  //Add delay before initialising external devices to ensure they are powered up?
   
   // Application main loop
   for (;;)
@@ -344,6 +356,8 @@ static void SimpleBLEBroadcaster_taskFxn(UArg a0, UArg a1)
           ICall_free(pMsg);
         }
       }
+
+	  //delay_ms(SENSOR_DEFAULT_PERIOD);
     }
   }
 }
@@ -390,6 +404,9 @@ static void SimpleBLEBroadcaster_processAppMsg(sbbEvt_t *pMsg)
       HeartRate_performPeriodicTask();
       break;
       
+    case HR_INTERNAL_EVT:
+    	ProcessHeartRateEvent();
+      break;
     default:
       	System_printf("Unexpected AppMsg: %d\n", pMsg->hdr.event);
       	System_flush();
@@ -478,7 +495,7 @@ static void HeartRate_clockHandler(UArg arg){
 
 static void HeartRate_performPeriodicTask(void){
 	Util_startClock(&periodicClock);
-	advertData[10]++;
+	advertData[6]++;
 	GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advertData), advertData);
 }
 
@@ -492,7 +509,7 @@ static void HeartRate_performPeriodicTask(void){
  *
  * @return  None.
  */
-static void HeartRate_enqueueMsg(uint8_t event)
+void HeartRate_enqueueMsg(uint8_t event)
 {
   sbbEvt_t *pMsg;
 
@@ -504,6 +521,26 @@ static void HeartRate_enqueueMsg(uint8_t event)
     // Enqueue the message.
     Util_enqueueMsg(appMsgQueue, sem, (uint8*)pMsg);
   }
+}
+
+void SimpleBLEBroadcaster_SetAdvertisingEnabled(uint8_t enable){
+	if (enable){
+		isAdvertisingEnabled = true;
+		GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &isAdvertisingEnabled);
+	}
+	else{
+		isAdvertisingEnabled = false;
+		GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &isAdvertisingEnabled);
+	}
+}
+
+void SimpleBLEBroadcaster_SetAdvertisingData(uint8_t index, uint8_t value, uint8_t update){
+    if (!isAdvertisingEnabled) {
+    	isAdvertisingEnabled = true;
+    	GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &isAdvertisingEnabled);
+    }
+	advertData[index] = (uint8)value;
+	if (update) GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advertData), advertData);
 }
 
 /*********************************************************************

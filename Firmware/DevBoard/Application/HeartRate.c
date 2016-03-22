@@ -45,6 +45,7 @@
 #include <xdc/cfg/global.h>
 #include <xdc/runtime/System.h>
 
+#include "simpleBLEBroadcaster.h"
 #include "HeartRate.h"
 #include "MAX30100.h"
 
@@ -53,19 +54,20 @@
 #endif
 
 #include "string.h"
-#include <ti/sysbios/knl/Semaphore.h>
-#include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/knl/Clock.h>
+
+#include <driverlib/aon_batmon.h>
 
 #include <ICall.h>
 #include "util.h"
 
-///* TI-RTOS Header files */
-//#include <ti/drivers/PIN.h>
-//#include <ti/drivers/I2C.h>
-//
 ///* Example/Board Header files */
+#ifdef WEARABLE
+#include "Board_WEARABLE.h"
+#include "vibration.h"
+#else
 #include "Board.h"
+#endif
 
 /*********************************************************************
  * MACROS
@@ -74,10 +76,6 @@
 /*********************************************************************
  * CONSTANTS
  */
-
-// Task configuration
-#define HEART_RATE_TASK_PRIORITY    1
-#define HEART_RATE_TASK_STACK_SIZE  600
 
 /*********************************************************************
  * TYPEDEFS
@@ -98,15 +96,6 @@
 /*********************************************************************
  * LOCAL VARIABLES
  */
-// Entity ID used to check for source and/or destination of messages
-//static ICall_EntityID sensorSelfEntity;
-
-// Semaphore used to post events to the application thread
-//static ICall_Semaphore sensorSem;
-
-// Task setup
-static Task_Struct HeartRateTask;
-static Char HeartRateTaskStack[HEART_RATE_TASK_STACK_SIZE];
 
 // Clock instances for internal periodic events.
 static Clock_Struct periodicClock;
@@ -114,13 +103,13 @@ static Clock_Struct periodicClock;
 //Pins
 const PIN_Config pinListInt[] = {
        Board_MAX_INT | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE,
-       Board_BUTTON | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_POSEDGE | PIN_HYSTERESIS,
+	   Board_BUTTON | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE | PIN_HYSTERESIS,
 	   //Board_INA_INT | PIN_INPUT_EN  | PIN_NOPULL | PIN_IRQ_NEGEDGE,
        PIN_TERMINATE
 };
 PIN_State  intPinState;
 PIN_Handle intPinHandle;
-static volatile uint8_t intPinEvent = 0;
+static volatile uint8_t event = 0;
 
 // MAX30100
 static int sampleCount = 0;
@@ -130,11 +119,9 @@ static const int samplePeriod = 1000 / sampleRate;//ms
 static const int numSamples = sampleRate * sampleDuration;
 static uint16_t IRSamples[numSamples];
 
-
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
-static void HeartRate_TaskFxn(UArg a0, UArg a1);
 void HeartRateIntHandler(PIN_Handle handle, PIN_Id pinId);
 
 static void HeartRate_performPeriodicTask(void);
@@ -144,57 +131,31 @@ static void HeartRate_clockHandler(UArg arg);
  * PUBLIC FUNCTIONS
  */
 
-/*********************************************************************
- * @fn      SensorTagTmp_createTask
- *
- * @brief   Task creation function for the SensorTag
- *
- * @param   none
- *
- * @return  none
- */
-void HeartRate_createTask(void)
-{
-  Task_Params taskParames;
-  
-  // Create the task for the state machine
-  Task_Params_init(&taskParames);
-  taskParames.stack = HeartRateTaskStack;
-  taskParames.stackSize = HEART_RATE_TASK_STACK_SIZE;
-  taskParames.priority = HEART_RATE_TASK_PRIORITY;
-
-  Task_construct(&HeartRateTask, HeartRate_TaskFxn, &taskParames, NULL);
-}
 
 /*********************************************************************
 * Private functions
 */
 
 /*********************************************************************
- * @fn      HeartRateTaskInit
+ * @fn      HeartRateInit
  *
  * @brief   Initialization function for the heart rate monitor
  *
  */
-static void HeartRateTaskInit(void)
+void HeartRateInit(void)
 {
-	System_printf("Heart rate task started\n");
-	System_flush();
 
 	//Initialise pins
 	intPinHandle = PIN_open(&intPinState, pinListInt);
 	if (!intPinHandle) {
-	   System_abort("Error opening pins for HeartRate task\n");
+	   System_abort("Error opening pins for HeartRate\n");
 	}
 	PIN_registerIntCb(intPinHandle, HeartRateIntHandler);
 	PIN_setInterrupt(intPinHandle, Board_MAX_INT | PIN_IRQ_NEGEDGE);
 	PIN_setInterrupt(intPinHandle, Board_BUTTON | PIN_IRQ_POSEDGE);
 	//PIN_setInterrupt(hStateInt, Board_INA_INT | PIN_IRQ_NEGEDGE);
 
-
-  // Initilialize the module state variables
-  
-  // Initialise drivers
+	// Initialise drivers
 	MAX30100_Initialise();
 	MAX30100_SetSampleRate(MAX_SPO2_50SPS);
 	MAX30100_SetPulseWidth(MAX_SPO2_1600US);
@@ -202,25 +163,44 @@ static void HeartRateTaskInit(void)
 	MAX30100_EnableInterrupt(MAX_INT_HR_RDY);
 	MAX30100_Shutdown(); //Keep asleep once configured until used
 
+#ifdef WEARABLE
+	VibrationInit();
+#endif
+
 #ifdef DISPLAY
 	Display_Initialise();
 #endif
 
-	  // Create one-shot clocks for internal periodic events.
-	  Util_constructClock(&periodicClock, HeartRate_clockHandler, samplePeriod, 0, false, 0);
+	// Create one-shot clocks for internal periodic events.
+	Util_constructClock(&periodicClock, HeartRate_clockHandler, samplePeriod, 0, false, 0);
+
+	System_printf("Heart Rate initialised\n");
+	System_flush();
 }
 
 //Handles pin interrupts for MAX30100 and othe devices
 void HeartRateIntHandler(PIN_Handle handle, PIN_Id pinId){
-	if (pinId == Board_MAX_INT)	intPinEvent = HR_EVENT_MAX;
-	else if (pinId == Board_INA_INT) intPinEvent = HR_EVENT_INA;
-	else if (pinId == Board_BUTTON) intPinEvent = HR_EVENT_BUTTON;
-	else intPinEvent = HR_EVENT_UNKNOWN;
+	switch (pinId) {
+		case Board_MAX_INT:
+			event = HR_EVENT_MAX;
+			break;
+//		case Board_INA_INT:
+//			event = HR_EVENT_INA;
+//			break;
+		case Board_BUTTON:
+			event = HR_EVENT_BUTTON;
+			break;
+		default:
+			event = HR_EVENT_UNKNOWN;
+			break;
+	}
+
+	HeartRate_enqueueMsg(HR_INTERNAL_EVT);
 }
 
-void ProcessIntEvent(){//TODO: make queue
-	uint8_t eventID = intPinEvent;//make copy as volatile
-	intPinEvent = 0; //reset flag immediately
+void ProcessHeartRateEvent(){//TODO: make queue
+	uint8_t eventID = event;//make copy as volatile
+	event = 0; //reset flag immediately
 
 	int i = 0;
 
@@ -229,13 +209,37 @@ void ProcessIntEvent(){//TODO: make queue
 			if(MAX30100_IsHRReady()){
 				IRSamples[sampleCount] = MAX30100_ReadHROnly();
 				sampleCount++;
+				if( sampleCount % 5 == 0){
+					uint16_t packetCount = sampleCount / 5;
+					SimpleBLEBroadcaster_SetAdvertisingData(0x07, (uint8_t)(packetCount & 0xff), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x08, (uint8_t)(packetCount >> 8), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x09, (uint8_t)sampleRate, 0);
+
+					SimpleBLEBroadcaster_SetAdvertisingData(0x0a, (uint8_t)(IRSamples[sampleCount-5] & 0xff), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x0b, (uint8_t)(IRSamples[sampleCount-5] >> 8), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x0c, (uint8_t)(IRSamples[sampleCount-4] & 0xff), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x0d, (uint8_t)(IRSamples[sampleCount-4] >> 8), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x0e, (uint8_t)(IRSamples[sampleCount-3] & 0xff), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x0f, (uint8_t)(IRSamples[sampleCount-3] >> 8), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x10, (uint8_t)(IRSamples[sampleCount-2] & 0xff), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x11, (uint8_t)(IRSamples[sampleCount-2] >> 8), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x12, (uint8_t)(IRSamples[sampleCount-1] & 0xff), 0);
+					SimpleBLEBroadcaster_SetAdvertisingData(0x13, (uint8_t)(IRSamples[sampleCount-1] >> 8), 1);
+				}
 				if (sampleCount >= numSamples){
 					sampleCount = 0;
 					MAX30100_FlushFIFO();
 					MAX30100_Shutdown();
 					Util_stopClock(&periodicClock);//stop sampling clock
+					SimpleBLEBroadcaster_SetAdvertisingData(0x07, (uint8_t)(0), 0); //reset sample count
+					SimpleBLEBroadcaster_SetAdvertisingData(0x08, (uint8_t)(0), 0); //TODO: reset all advetising data to initial values
+					SimpleBLEBroadcaster_SetAdvertisingEnabled(false);//TODO: check works?
 					System_printf("Finished sampling\n");
 					System_flush();
+#ifdef DISPLAY
+					DisplayPrint("Finished sampling\n");
+					Display_Update();
+#endif
 				}
 				else {
 					MAX30100_Shutdown();
@@ -246,7 +250,7 @@ void ProcessIntEvent(){//TODO: make queue
 			break;
 		case HR_EVENT_BUTTON: //Button
 #ifdef DISPLAY
-			for (i = 0; i < 16; i++){
+			for (i = 0; i < 16; i++){//Display all colours
 				Display_SetRow(i, DISPLAY_COLOUR_WHITE);
 				Display_SetRow(i+16, DISPLAY_COLOUR_BLACK);
 				Display_SetRow(i+32, DISPLAY_COLOUR_BLUE);
@@ -257,6 +261,7 @@ void ProcessIntEvent(){//TODO: make queue
 				Display_SetRow(i+112, DISPLAY_COLOUR_YELLOW);
 			}
 
+			DisplayPrint("Sampling at 10Hz\n");
 			Display_Update();
 #endif
 			Util_startClock(&periodicClock);//start sampling clock
@@ -265,46 +270,21 @@ void ProcessIntEvent(){//TODO: make queue
 			HeartRate_performPeriodicTask();
 			break;
 		case HR_EVENT_UNKNOWN:
-			System_printf("Unexpected interrupt\n");
-			System_flush();
-			break;
 		default:
+			System_printf("Unexpected HR event\n");
+			System_flush();
 			break;
 	}
 }
 
-/*********************************************************************
- * @fn      HeartRate_TaskFxn
- *
- * @brief   The task loop of the heart rate monmnitor task
- *
- * @return  none
- */
-static void HeartRate_TaskFxn(UArg a0, UArg a1)
-{
-  //Initialise variables
-  
-  // Initialize the task
-	HeartRateTaskInit();
-  
-  // Task loop
-  while (1)
-  {
-	  if (intPinEvent != 0) ProcessIntEvent();
-
-	  //delay_ms(SENSOR_DEFAULT_PERIOD);
-  }
-}
-
-
-static void HeartRate_performPeriodicTask(void){
+void HeartRate_performPeriodicTask(void){
 	Util_startClock(&periodicClock);
 	MAX30100_SetHRMode();//start sensor sampling
-
 }
 
 static void HeartRate_clockHandler(UArg arg){
-	intPinEvent = HR_EVENT_PERIODIC;
+	event = HR_EVENT_PERIODIC;
+	HeartRate_enqueueMsg(HR_INTERNAL_EVT);
 }
 
 /*********************************************************************

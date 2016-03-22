@@ -44,7 +44,6 @@
 #include "peripheral.h"
 
 #include "simpleBLEBroadcaster.h"
-#include "HeartRate.h"
 
 /* Header files required to enable instruction fetch cache */
 #include <inc/hw_memmap.h>
@@ -92,7 +91,6 @@ int main()
     
     /* Kick off application - Priority 1 */
     SimpleBLEBroadcaster_createTask();
-    HeartRate_createTask();
 
     BIOS_start();     /* enable interrupts and start SYS/BIOS */
     

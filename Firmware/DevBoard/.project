@@ -67,6 +67,26 @@
 			<locationURI>virtual:/virtual</locationURI>
 		</link>
 		<link>
+			<name>Application/DRV2605L.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/DRV2605L.c</locationURI>
+		</link>
+		<link>
+			<name>Application/DRV2605L.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/DRV2605L.h</locationURI>
+		</link>
+		<link>
+			<name>Application/Display.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/Display.c</locationURI>
+		</link>
+		<link>
+			<name>Application/Display.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/Display.h</locationURI>
+		</link>
+		<link>
 			<name>Application/HeartRate.c</name>
 			<type>1</type>
 			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/HeartRate.c</locationURI>
@@ -77,6 +97,16 @@
 			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/HeartRate.h</locationURI>
 		</link>
 		<link>
+			<name>Application/I2C.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/I2C.c</locationURI>
+		</link>
+		<link>
+			<name>Application/I2C.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/I2C.h</locationURI>
+		</link>
+		<link>
 			<name>Application/MAX30100.c</name>
 			<type>1</type>
 			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/MAX30100.c</locationURI>
@@ -85,6 +115,36 @@
 			<name>Application/MAX30100.h</name>
 			<type>1</type>
 			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/MAX30100.h</locationURI>
+		</link>
+		<link>
+			<name>Application/SPI.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/SPI.c</locationURI>
+		</link>
+		<link>
+			<name>Application/SPI.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/SPI.h</locationURI>
+		</link>
+		<link>
+			<name>Application/fonts.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/fonts.c</locationURI>
+		</link>
+		<link>
+			<name>Application/fonts.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/fonts.h</locationURI>
+		</link>
+		<link>
+			<name>Application/graphics.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/graphics.c</locationURI>
+		</link>
+		<link>
+			<name>Application/graphics.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/graphics.h</locationURI>
 		</link>
 		<link>
 			<name>Application/simpleBLEBroadcaster.c</name>
@@ -105,6 +165,16 @@
 			<name>Application/util.h</name>
 			<type>1</type>
 			<locationURI>PARENT-5-ORG_PROJ_DIR/common/cc26xx/util.h</locationURI>
+		</link>
+		<link>
+			<name>Application/vibration.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/vibration.c</locationURI>
+		</link>
+		<link>
+			<name>Application/vibration.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/vibration.h</locationURI>
 		</link>
 		<link>
 			<name>Drivers/I2C</name>
@@ -214,7 +284,7 @@
 		<link>
 			<name>PROFILES/broadcaster.c</name>
 			<type>1</type>
-			<locationURI>PARENT-5-ORG_PROJ_DIR/Profiles/Roles/CC26xx/broadcaster.c</locationURI>
+			<locationURI>PROJECT_LOC/Application/broadcaster.c</locationURI>
 		</link>
 		<link>
 			<name>PROFILES/broadcaster.h</name>

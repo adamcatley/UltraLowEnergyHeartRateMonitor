@@ -53,11 +53,11 @@ extern "C"
  * CONSTANTS
  */
   
-#define HR_EVENT_MAX 1
-#define HR_EVENT_INA 2
-#define HR_EVENT_BUTTON 3
-#define HR_EVENT_PERIODIC 4
-#define HR_EVENT_UNKNOWN 0xff
+#define HR_EVENT_MAX 		0x01
+#define HR_EVENT_INA 		0x02
+#define HR_EVENT_BUTTON 	0x04
+#define HR_EVENT_PERIODIC 	0x08
+#define HR_EVENT_UNKNOWN 	0xff
 
 
 /*********************************************************************
@@ -68,10 +68,8 @@ extern "C"
  * FUNCTIONS
  */
   
-/*
- * Create the heart rate monitor task
- */
-void HeartRate_createTask(void);
+void HeartRateInit(void);
+void ProcessHeartRateEvent();
 
 /*********************************************************************
 *********************************************************************/
