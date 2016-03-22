@@ -45,8 +45,8 @@
 #include <xdc/cfg/global.h>
 #include <xdc/runtime/System.h>
 
-#include "simpleBLEBroadcaster.h"
 #include "HeartRate.h"
+#include "simpleBLEBroadcaster.h"
 #include "MAX30100.h"
 
 #ifdef DISPLAY
@@ -65,6 +65,8 @@
 #ifdef WEARABLE
 #include "Board_WEARABLE.h"
 #include "vibration.h"
+#include "flash.h"
+#include "Si1147.h"
 #else
 #include "Board.h"
 #endif
@@ -114,7 +116,7 @@ static volatile uint8_t event = 0;
 // MAX30100
 static int sampleCount = 0;
 static const int sampleRate = 10;//Hz
-static const int sampleDuration = 30;//seconds
+static const int sampleDuration = 10;//seconds
 static const int samplePeriod = 1000 / sampleRate;//ms
 static const int numSamples = sampleRate * sampleDuration;
 static uint16_t IRSamples[numSamples];
@@ -165,6 +167,8 @@ void HeartRateInit(void)
 
 #ifdef WEARABLE
 	VibrationInit();
+	FlashInit();
+	Si1147_Initialise();
 #endif
 
 #ifdef DISPLAY
@@ -195,10 +199,10 @@ void HeartRateIntHandler(PIN_Handle handle, PIN_Id pinId){
 			break;
 	}
 
-	HeartRate_enqueueMsg(HR_INTERNAL_EVT);
+	HeartRate_enqueueMsg(SBB_HEART_RATE_EVT);
 }
 
-void ProcessHeartRateEvent(){//TODO: make queue
+void HeartRateEventHandler(){//TODO: make queue
 	uint8_t eventID = event;//make copy as volatile
 	event = 0; //reset flag immediately
 
@@ -284,7 +288,7 @@ void HeartRate_performPeriodicTask(void){
 
 static void HeartRate_clockHandler(UArg arg){
 	event = HR_EVENT_PERIODIC;
-	HeartRate_enqueueMsg(HR_INTERNAL_EVT);
+	HeartRate_enqueueMsg(SBB_HEART_RATE_EVT);
 }
 
 /*********************************************************************

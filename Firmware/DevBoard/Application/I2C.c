@@ -115,8 +115,8 @@ void I2C_UpdateParams(){
 
 void I2C_Initialise(){ //TODO: add status return value
 	if (i2c != NULL){
-		System_printf("I2C already initialised!\n");
-		System_flush();
+//		System_printf("I2C already initialised!\n");
+//		System_flush();
 		return;
 	}
 

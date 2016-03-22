@@ -16,6 +16,7 @@
 #include <xdc/runtime/System.h>
 
 #include "Display.h"
+#include "simpleBLEBroadcaster.h"
 #include "graphics.h"
 
 #include "SPI.h"
@@ -23,7 +24,12 @@
 #include <ti/sysbios/knl/Clock.h>
 #include "util.h"
 #include "ICall.h"
-//
+
+//For dispalying time
+#include <stdio.h>
+#include <time.h>
+#include <ti/sysbios/hal/Seconds.h>
+
 ///* Example/Board Header files */
 #ifdef WEARABLE
 #include "Board_WEARABLE.h"
@@ -36,13 +42,16 @@
  */
 #define DISPLAY_SPI_SET_CS()			PIN_setOutputValue(displayPinHandle, Board_DISPLAY_CS, 1)
 #define DISPLAY_SPI_CLEAR_CS()		PIN_setOutputValue(displayPinHandle, Board_DISPLAY_CS, 0)
-#define DISPLAY_SET_BIT(__line__, __byte__, __bit__)	( pixels[__line__][__byte__] |= (1 << __bit__) )
-#define DISPLAY_CLEAR_BIT(__line__, __byte__, __bit__)	( pixels[__line__][__byte__] &= ~(1 << __bit__) )
+#define pixels(__y__, __x__)		( pixels[(__y__ * DISPLAY_BYTES_PER_LINE) + __x__] )
+//#define pixels(__y__, __x__)		( pixels[__y__][__x__] )
+#define DISPLAY_SET_BIT(__line__, __byte__, __bit__)	( pixels(__line__,__byte__) |= (1 << __bit__) )
+#define DISPLAY_CLEAR_BIT(__line__, __byte__, __bit__)	( pixels(__line__,__byte__) &= ~(1 << __bit__) )
 
 /*********************************************************************
  * CONSTANTS
  */
 
+#define DISPLAY_PERIODIC_EVENT_PERIOD			500	//1Hz pin toggle
 
 /*********************************************************************
  * TYPEDEFS
@@ -66,13 +75,14 @@
 
 // Clock instances for internal periodic events.
 static Clock_Struct displayPeriodicClock;
+static Clock_Struct displayMinuteClock;
 
 //SPI
 SPI_Transaction displaySPITransaction;
 
 //Main screen buffer
 //static uint8_t pixels[DISPLAY_HEIGHT][DISPLAY_BYTES_PER_LINE]; //[128][48]
-static uint8_t **pixels; //Buffer allocated on ICall heap
+static uint8_t *pixels; //Buffer allocated on ICall heap
 
 //SPI TX buffer
 static uint8_t DisplayTXBuffer[2 + (DISPLAY_BYTES_PER_LINE) + 2]; //52 bytes for line update command
@@ -85,6 +95,8 @@ const PIN_Config displayPinList[] = {
 };
 PIN_State  displayPinState;
 PIN_Handle displayPinHandle;
+
+static volatile uint8_t event = 0;
 
 static const uint8_t BitReverseTable256[] =
 {
@@ -110,7 +122,9 @@ static const uint8_t BitReverseTable256[] =
  * LOCAL FUNCTIONS
  */
 static void Display_clockHandler(UArg arg);
+static void Display_minuteClockHandler(UArg arg);
 
+void UpdateTime();
 
 /*********************************************************************
  * PUBLIC FUNCTIONS
@@ -120,11 +134,11 @@ void Display_Initialise(){
 	//Allocate buffer in ICall heap
 
 	//Allocate on a per line basis instead of requiring a big block to be available
-	pixels = (uint8_t**)ICall_malloc(DISPLAY_HEIGHT*sizeof(uint8_t*));
-	uint8_t i;
-	for (i = 0; i < DISPLAY_HEIGHT; i++){
-		pixels[i] = (uint8_t*) ICall_malloc(DISPLAY_BYTES_PER_LINE*sizeof(uint8_t));
-	}
+	pixels = (uint8_t*)ICall_malloc(DISPLAY_HEIGHT*DISPLAY_BYTES_PER_LINE*sizeof(uint8_t));
+//	uint8_t i;
+//	for (i = 0; i < DISPLAY_HEIGHT; i++){
+//		pixels[i] = (uint8_t*) ICall_malloc(DISPLAY_BYTES_PER_LINE*sizeof(uint8_t));
+//	}
 
 	if (pixels == NULL){
 		System_abort("Couldn't allocate buffer in heap\n");
@@ -137,7 +151,7 @@ void Display_Initialise(){
 	//displaySPITransaction.count must be set for each transfer
 
 	//Manual control of CS line. Must be high 3us before data and 1us after data
-	//TODO: configure control lines (enable, EXTMODE etc)
+	//TODO: configure control lines (enable, EXTMODE)
 	//Initialise pins
 	displayPinHandle = PIN_open(&displayPinState, displayPinList);
 	if (!displayPinHandle) {
@@ -154,26 +168,38 @@ void Display_Initialise(){
 	uint8_t x, y;
 	for (y = 0; y < DISPLAY_HEIGHT; y++){
 		for(x = 0; x < DISPLAY_BYTES_PER_LINE; x++){
-			pixels[y][x] = 0xff; //Shorthand to set all to white insead of calls to SetPixel()
+			pixels(y,x) = 0xff; //Shorthand to set all to white insead of calls to SetPixel()
 		}
 	}
 
 	fillCircle(64, 64, 20, DISPLAY_COLOUR_YELLOW);
 	DisplayPrint("Heart Rate Monitor\n");
 	DisplayPrint("by Adam Catley\n");
+
+	setCursor(8,14);
+	DisplayPrint("00:00:00");
+	setCursor(3,0);
 	Display_Update();
 
 
 	// Create one-shot clocks for internal periodic events.
-	Util_constructClock(&displayPeriodicClock, Display_clockHandler, 500, 0, true, 0); //1Hz
+	Util_constructClock(&displayPeriodicClock, Display_clockHandler, DISPLAY_PERIODIC_EVENT_PERIOD, 0, true, 0);
+	Util_constructClock(&displayMinuteClock, Display_minuteClockHandler, 10*1000, 0, true, 0); //Once every minute
+
+	Seconds_set(1451606400);//Set to start of 2016
 
 	System_printf("Display initialised\n");
 	System_flush();
 }
 
 static void Display_clockHandler(UArg arg){
-	Util_startClock(&displayPeriodicClock);
-	PIN_setOutputValue(displayPinHandle, Board_DISPLAY_EXTCOMIN, !PIN_getOutputValue(Board_DISPLAY_EXTCOMIN)); //Toggle EXCOMIN pin
+	event = DISPLAY_EVENT_PERIODIC;
+	HeartRate_enqueueMsg(SBB_DISPLAY_EVT);
+}
+
+static void Display_minuteClockHandler(UArg arg){
+	event = DISPLAY_EVENT_MINUTE;
+	HeartRate_enqueueMsg(SBB_DISPLAY_EVT);
 }
 
 void Display_Clear(){
@@ -199,7 +225,7 @@ void Display_UpdateRow(uint8_t row){
 	DisplayTXBuffer[i++] = BitReverseTable256[DISPLAY_WIDTH - (row + 1)]; //Compensate for LSB first display, 1-128 index top to bottom and upside down
 	uint8_t currentByte;
 	for (currentByte = 0; currentByte < DISPLAY_BYTES_PER_LINE; currentByte++){
-		DisplayTXBuffer[i + currentByte] = BitReverseTable256[pixels[row][currentByte]];
+		DisplayTXBuffer[i + currentByte] = BitReverseTable256[pixels(row,currentByte)];
 	}
 	i += currentByte;
 	DisplayTXBuffer[i++] = 0; //First dummy byte
@@ -241,6 +267,40 @@ void Display_SetRow(uint8_t row, Display_Colour col){
 	for (x = 0; x < DISPLAY_WIDTH; x++){
 		Display_SetPixel(row, x, col);
 	}
+}
+
+void DisplayEventHandler(){//TODO: make queue or set/clear individual bits
+	uint8_t eventID = event;//make copy as volatile
+	event = 0; //reset flag immediately
+
+	switch (eventID) {
+		case DISPLAY_EVENT_PERIODIC:
+			Util_startClock(&displayPeriodicClock);
+			PIN_setOutputValue(displayPinHandle, Board_DISPLAY_EXTCOMIN, !PIN_getOutputValue(Board_DISPLAY_EXTCOMIN)); //Toggle EXCOMIN pin
+			break;
+		case DISPLAY_EVENT_MINUTE:
+			//Update time
+			Util_startClock(&displayMinuteClock);
+			UpdateTime();
+			break;
+		case DISPLAY_EVENT_UNKNOWN:
+		default:
+			System_printf("Unexpected display event\n");
+			System_flush();
+			break;
+	}
+}
+
+void UpdateTime(){
+//	uint32_t time = Seconds_get();
+	time_t t = time(NULL);
+	struct tm *ltm = localtime(&t);
+	char str[8]; //String to hold the time
+	sprintf(str, "%02d:%02d:%02d\n", ltm->tm_hour, ltm->tm_min, ltm->tm_sec);
+	setCursor(8,14);
+	DisplayPrint(str);
+	Display_Update();
+	setCursor(0,0);
 }
 
 /*********************************************************************

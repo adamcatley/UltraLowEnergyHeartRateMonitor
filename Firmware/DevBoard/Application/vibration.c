@@ -48,11 +48,19 @@
 //#include "simpleBLEBroadcaster.h"
 #include "vibration.h"
 #include "DRV2605L.h"
+#include "simpleBLEBroadcaster.h"
 
-//#include <ti/sysbios/knl/Clock.h>
+#include <ti/sysbios/knl/Clock.h>
 
 #include <ICall.h>
 #include "util.h"
+
+///* Example/Board Header files */
+#ifdef WEARABLE
+#include "Board_WEARABLE.h"
+#else
+#include "Board.h"
+#endif
 
 /*********************************************************************
  * MACROS
@@ -63,7 +71,9 @@
  */
 
 #define VIBRATION_PERIODIC_EVENT_PERIOD			500
-#define VIBRATION_EVENT_PERIODIC 0xFF //TODO: set value, and move to simpleBLEBroadcaster?
+
+#define VIBRATION_EVENT_PERIODIC 	0x01
+#define VIBRATION_EVENT_UNKNOWN 	0xFF
 
 /*********************************************************************
  * TYPEDEFS
@@ -112,7 +122,7 @@ void VibrationInit(void)
 	uint8_t status = DRV2605L_ReadStatus();
 
 	// Create one-shot clocks for internal periodic events.
-	//Util_constructClock(&vibrationPeriodicClock, Vibration_periodicClockHandler, VIBRATION_PERIODIC_EVENT_PERIOD, 0, true, 0);
+	Util_constructClock(&vibrationPeriodicClock, Vibration_periodicClockHandler, VIBRATION_PERIODIC_EVENT_PERIOD, 0, false, 0);
 
 	System_printf("Vibration initialised: %x\n", status);
 	System_flush();
@@ -124,10 +134,24 @@ void VibrationInit(void)
 
 static void Vibration_periodicClockHandler(UArg arg){
 	event = VIBRATION_EVENT_PERIODIC;
-	HeartRate_enqueueMsg(VIBRATION_EVENT_PERIODIC);//TODO: set correct value
-	Util_startClock(&vibrationPeriodicClock);
+	HeartRate_enqueueMsg(SBB_VIBRATION_EVT);
 }
 
+void VibrationEventHandler(){//TODO: make queue or set/clear individual bits
+	uint8_t eventID = event;//make copy as volatile
+	event = 0; //reset flag immediately
+
+	switch (eventID) {
+		case VIBRATION_EVENT_PERIODIC:
+			Util_startClock(&vibrationPeriodicClock);
+			break;
+		case VIBRATION_EVENT_UNKNOWN:
+		default:
+			System_printf("Unexpected vibration event\n");
+			System_flush();
+			break;
+	}
+}
 /*********************************************************************
 *********************************************************************/
 

@@ -323,9 +323,11 @@ void drawChar(int16_t x, int16_t y, unsigned char c,
   }
 }
 
-void setCursor(int16_t x, int16_t y) {
-  cursor_x = x;
-  cursor_y = y;
+void setCursor(int16_t x, int16_t y) {//x and y is character index
+  uint16_t w = 5;//TODO: remove hardcoded values
+  uint16_t h = 8;
+  cursor_x = x * w;
+  cursor_y = y * h;
 }
 
 void setTextSize(uint8_t s) {

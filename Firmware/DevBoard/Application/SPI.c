@@ -78,8 +78,8 @@ void SPI_UpdateParams(){
 
 void SPI_Initialise(){ //TODO: add status return value
 	if (spi != NULL){
-		System_printf("SPI already initialised!\n");
-		System_flush();
+//		System_printf("SPI already initialised!\n");
+//		System_flush();
 		return;
 	}
 

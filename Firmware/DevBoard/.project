@@ -117,6 +117,16 @@
 			<locationURI>PARENT-7-PROJECT_LOC/TI/ccsv6/workspace/UltraLowEnergyHeartRateMonitor/Firmware/DevBoard/Application/MAX30100.h</locationURI>
 		</link>
 		<link>
+			<name>Application/MX25.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/MX25.c</locationURI>
+		</link>
+		<link>
+			<name>Application/MX25.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/MX25.h</locationURI>
+		</link>
+		<link>
 			<name>Application/SPI.c</name>
 			<type>1</type>
 			<locationURI>PROJECT_LOC/Application/SPI.c</locationURI>
@@ -125,6 +135,26 @@
 			<name>Application/SPI.h</name>
 			<type>1</type>
 			<locationURI>PROJECT_LOC/Application/SPI.h</locationURI>
+		</link>
+		<link>
+			<name>Application/Si1147.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/Si1147.c</locationURI>
+		</link>
+		<link>
+			<name>Application/Si1147.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/Si1147.h</locationURI>
+		</link>
+		<link>
+			<name>Application/flash.c</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/flash.c</locationURI>
+		</link>
+		<link>
+			<name>Application/flash.h</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/Application/flash.h</locationURI>
 		</link>
 		<link>
 			<name>Application/fonts.c</name>

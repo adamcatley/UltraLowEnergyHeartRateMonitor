@@ -69,7 +69,7 @@ extern "C"
  */
   
 void HeartRateInit(void);
-void ProcessHeartRateEvent();
+void HeartRateEventHandler();
 
 /*********************************************************************
 *********************************************************************/

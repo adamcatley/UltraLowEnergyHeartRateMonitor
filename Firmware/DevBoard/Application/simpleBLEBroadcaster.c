@@ -64,14 +64,21 @@
 #include <ICall.h>
 
 #include "util.h"
+
+#include "simpleBLEBroadcaster.h"
+#include "HeartRate.h"
+#include "vibration.h"
+#include "flash.h"
+#include "Si1147.h"
+#include "Display.h"
+
+///* Example/Board Header files */
 #ifdef WEARABLE
 #include "Board_WEARABLE.h"
 #else
 #include "Board.h"
 #endif
    
-#include "simpleBLEBroadcaster.h"
-#include "HeartRate.h"
 
 //#include <ti/drivers/I2C.h>
 /*********************************************************************
@@ -182,9 +189,6 @@ static void SimpleBLEBroadcaster_processAppMsg(sbbEvt_t *pMsg);
 static void SimpleBLEBroadcaster_processStateChangeEvt(gaprole_States_t newState);
 
 static void SimpleBLEBroadcaster_stateChangeCB(gaprole_States_t newState);
-
-static void HeartRate_performPeriodicTask(void);
-static void HeartRate_clockHandler(UArg arg);
 
 /*********************************************************************
  * PROFILE CALLBACKS
@@ -397,18 +401,22 @@ static void SimpleBLEBroadcaster_processAppMsg(sbbEvt_t *pMsg)
   switch (pMsg->hdr.event)
   {
     case SBB_STATE_CHANGE_EVT:
-      SimpleBLEBroadcaster_processStateChangeEvt((gaprole_States_t)pMsg->
-                                                 hdr.state);
+      SimpleBLEBroadcaster_processStateChangeEvt((gaprole_States_t)pMsg->hdr.state);
       break;
-    case HR_PERIODIC_EVT:
-      HeartRate_performPeriodicTask();
+    case SBB_HEART_RATE_EVT:
+    	HeartRateEventHandler();
       break;
-      
-    case HR_INTERNAL_EVT:
-    	ProcessHeartRateEvent();
+    case SBB_DISPLAY_EVT:
+    	DisplayEventHandler();
+      break;
+    case SBB_FLASH_EVT:
+    	FlashEventHandler();
+      break;
+    case SBB_VIBRATION_EVT:
+    	VibrationEventHandler();
       break;
     default:
-      	System_printf("Unexpected AppMsg: %d\n", pMsg->hdr.event);
+      	System_printf("Unexpected AppMsg: 0x%x\n", pMsg->hdr.event);
       	System_flush();
       // Do nothing.
       break;
@@ -487,16 +495,6 @@ static void SimpleBLEBroadcaster_processStateChangeEvt(gaprole_States_t newState
       break; 
   }
   System_flush();
-}
-
-static void HeartRate_clockHandler(UArg arg){
-	HeartRate_enqueueMsg(HR_PERIODIC_EVT);
-}
-
-static void HeartRate_performPeriodicTask(void){
-	Util_startClock(&periodicClock);
-	advertData[6]++;
-	GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advertData), advertData);
 }
 
 /*********************************************************************

@@ -55,9 +55,11 @@ extern "C"
 
 // Internal Events for RTOS application
 #define SBB_STATE_CHANGE_EVT				  0x0001
-#define SBB_KEY_CHANGE_EVT                    0x0002
-#define HR_PERIODIC_EVT						  0x0004
-#define HR_INTERNAL_EVT						  0x0008
+#define SBB_HEART_RATE_EVT					  0x0002
+#define SBB_DISPLAY_EVT						  0x0004
+#define SBB_FLASH_EVT						  0x0008
+#define SBB_VIBRATION_EVT					  0x0010
+#define SBB_UNKNOWN_EVT						  0x00FF
 /*********************************************************************
  * MACROS
  */

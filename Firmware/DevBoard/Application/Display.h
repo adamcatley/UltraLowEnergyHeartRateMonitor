@@ -47,6 +47,11 @@ typedef enum{
 	DISPLAY_COLOUR_WHITE
 }Display_Colour;
 
+//Event IDs
+#define DISPLAY_EVENT_PERIODIC	0x01
+#define DISPLAY_EVENT_MINUTE	0x02
+#define DISPLAY_EVENT_UNKNOWN 	0xFF
+
 /*********************************************************************
  * MACROS
  */
@@ -65,6 +70,7 @@ void Display_SetPixel(uint8_t row, uint8_t pixel, Display_Colour col);
 void Display_SetRow(uint8_t row, Display_Colour col);
 void DisplayPrint(char* string);
 
+void DisplayEventHandler();
 
 /*********************************************************************
 *********************************************************************/

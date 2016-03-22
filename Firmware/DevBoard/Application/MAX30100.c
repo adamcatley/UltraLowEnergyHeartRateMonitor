@@ -22,9 +22,13 @@
 #include <ti/drivers/I2C.h>
 #include "I2C.h"
 
-//
+
 ///* Example/Board Header files */
+#ifdef WEARABLE
+#include "Board_WEARABLE.h"
+#else
 #include "Board.h"
+#endif
 
 /*********************************************************************
  * MACROS
