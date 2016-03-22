@@ -77,30 +77,41 @@ extern PIN_Config BoardGpioInitTable[];
 /* Leds */
 #define Board_LED_ON                        1               /* LEDs are active high */
 #define Board_LED_OFF                       0
+
+//SPI
+#define Board_SPI_CLK                		IOID_2
+#define Board_SPI_MOSI                  	IOID_3
+#define Board_SPI_MISO                  	IOID_4
+
+/* I2C */
+#define Board_I2C_SCL                       IOID_9
+#define Board_I2C_SDA                       IOID_10
+
 /* Buttons */
 #define Board_BUTTON	                    IOID_12
 #define Board_BUTTON_2	                    IOID_11
+
 /* Display */
 #define Board_DISPLAY_EXTCOMIN              IOID_1
 #define Board_DISPLAY_ENABLE                PIN_UNASSIGNED
 #define Board_DISPLAY_EXTMODE               PIN_UNASSIGNED
 #define Board_DISPLAY_CS                    IOID_0
-#define Board_DISPLAY_MOSI                  IOID_3
-#define Board_DISPLAY_CLK                   IOID_2
-
+#define Board_DISPLAY_MOSI                  Board_SPI_MOSI
+#define Board_DISPLAY_CLK                   Board_SPI_CLK
 
 //Temporary
-#define Board_AFE_MOSI                      IOID_4
-#define Board_AFE_CS                        Board_AFE_MOSI
-#define Board_AFE_MISO                      Board_AFE_MOSI
-#define Board_AFE_SCLK                      Board_AFE_MOSI
+#define Board_AFE_MOSI                      Board_SPI_MISO
+#define Board_AFE_CS                        Board_SPI_MISO
+#define Board_AFE_MISO                      Board_SPI_MISO
+#define Board_AFE_SCLK                      Board_SPI_MISO
 
-/* I2C */
-#define Board_I2C_SDA                       IOID_10
-#define Board_I2C_SCL                       IOID_9
+//Other
+#define Board_ADXL_CS                      	IOID_5
+#define Board_FLASH_CS						IOID_6
+#define Board_ADXL_INT                      IOID_7
 #define Board_MAX_INT                       IOID_8
-#define Board_ADXL_INT                       IOID_5
-#define Board_FLASH_INT                       IOID_6
+#define Board_Si11XX_INT                    IOID_13
+#define Board_BATTERY_SENSE                 IOID_14
 
 /** ============================================================================
  *  Instance identifiers
