@@ -77,40 +77,30 @@ extern PIN_Config BoardGpioInitTable[];
 /* Leds */
 #define Board_LED_ON                        1               /* LEDs are active high */
 #define Board_LED_OFF                       0
-#define Board_LED_1                          IOID_5
-#define Board_LED_2                          IOID_6
-#define Board_LED_3                          IOID_7
 /* Buttons */
-#define Board_BUTTON	                    IOID_9
+#define Board_BUTTON	                    IOID_12
+#define Board_BUTTON_2	                    IOID_11
 /* Display */
-#define Board_DISPLAY_EXTCOMIN              IOID_0
-#define Board_DISPLAY_ENABLE                IOID_1
-#define Board_DISPLAY_EXTMODE               IOID_2
-#define Board_DISPLAY_CS                    IOID_3
-#define Board_DISPLAY_MOSI                  IOID_4
-#define Board_DISPLAY_CLK                   IOID_8
-/* AFE */
-#define Board_AFE_XIN                       IOID_19
-#define Board_AFE_RESETn                    IOID_20
-#define Board_AFE_RDY                       IOID_21
-#define Board_AFE_CS                        IOID_22
-#define Board_AFE_MOSI                      IOID_23
-#define Board_AFE_MISO                      IOID_24
-#define Board_AFE_SCLK                      IOID_25
-#define Board_AFE_PD_ALM                    IOID_26
-#define Board_AFE_LED_ALM                   IOID_27
-#define Board_AFE_DIAG_END                  IOID_28
-#define Board_AFE_PDNn                      IOID_29
+#define Board_DISPLAY_EXTCOMIN              IOID_1
+#define Board_DISPLAY_ENABLE                PIN_UNASSIGNED
+#define Board_DISPLAY_EXTMODE               PIN_UNASSIGNED
+#define Board_DISPLAY_CS                    IOID_0
+#define Board_DISPLAY_MOSI                  IOID_3
+#define Board_DISPLAY_CLK                   IOID_2
+
+
+//Temporary
+#define Board_AFE_MOSI                      IOID_4
+#define Board_AFE_CS                        Board_AFE_MOSI
+#define Board_AFE_MISO                      Board_AFE_MOSI
+#define Board_AFE_SCLK                      Board_AFE_MOSI
+
 /* I2C */
-#define Board_I2C_SDA                       IOID_15
-#define Board_I2C_SCL                       IOID_14
-#define Board_MAX_INT                       IOID_30
-#define Board_INA_INT                       IOID_18
-/* GPIOs */
-#define Board_GPIO_0                        IOID_13
-#define Board_GPIO_1                        IOID_12
-#define Board_GPIO_2                        IOID_11
-#define Board_GPIO_3                        IOID_10
+#define Board_I2C_SDA                       IOID_10
+#define Board_I2C_SCL                       IOID_9
+#define Board_MAX_INT                       IOID_8
+#define Board_ADXL_INT                       IOID_5
+#define Board_FLASH_INT                       IOID_6
 
 /** ============================================================================
  *  Instance identifiers

@@ -50,8 +50,11 @@
 #include <ti/sysbios/family/arm/cc26xx/Power.h>
 #include <ti/sysbios/family/arm/cc26xx/PowerCC2650.h>
 #include <ti/drivers/PIN.h>
+#ifdef WEARABLE
+#include "Board_WEARABLE.h"
+#else
 #include "Board.h"
-
+#endif
 /*
  *  ========================= IO driver initialization =========================
  *  From main, PIN_init(BoardGpioInitTable) should be called to setup safe
@@ -59,15 +62,29 @@
  *  When a pin is allocated and then de-allocated, it will revert to the state
  *  configured in this table.
 */
+
+#ifdef WEARABLE
+PIN_Config BoardGpioInitTable[] = {
+	Board_DISPLAY_EXTCOMIN		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+	Board_DISPLAY_CS		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+
+	Board_MAX_INT | PIN_INPUT_EN | PIN_NOPULL,
+	Board_BUTTON    | PIN_INPUT_EN | PIN_NOPULL | PIN_HYSTERESIS,
+	Board_BUTTON_2    | PIN_INPUT_EN | PIN_NOPULL | PIN_HYSTERESIS,
+
+    PIN_TERMINATE                                                                               /* Terminate list                  */
+};
+
+#else
 PIN_Config BoardGpioInitTable[] = {
 	Board_LED_1		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX, //LED initially off
 	Board_LED_2		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX, //LED initially off
 	Board_LED_3		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX, //LED initially off
-	Board_BUTTON    | PIN_INPUT_EN | PIN_NOPULL | PIN_HYSTERESIS,
 
 	Board_DISPLAY_EXTCOMIN		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-	Board_DISPLAY_ENABLE		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-	Board_DISPLAY_EXTMODE		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+	Board_DISPLAY_ENABLE		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+	Board_DISPLAY_EXTMODE		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,//use EXTCOMIN
+	Board_DISPLAY_CS		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
 
 	Board_GPIO_0		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,     /* GPIO use initially output */
 	Board_GPIO_1		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,     /* GPIO use initially output */
@@ -75,11 +92,13 @@ PIN_Config BoardGpioInitTable[] = {
 	Board_GPIO_3		| PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,     /* GPIO use initially output */
 
 	Board_MAX_INT | PIN_INPUT_EN | PIN_NOPULL,
-	Board_BUTTON | PIN_INPUT_EN | PIN_NOPULL,
+	Board_BUTTON    | PIN_INPUT_EN | PIN_NOPULL | PIN_HYSTERESIS,
 	//Board_INA_INT | PIN_INPUT_EN | PIN_NOPULL,
 
     PIN_TERMINATE                                                                               /* Terminate list                  */
 };
+#endif
+
 /*============================================================================*/
 
 /*
@@ -176,9 +195,9 @@ const SPICC26XX_HWAttrs spiCC26XXDMAHWAttrs[CC2650_SPICOUNT] = {
         .powerMngrId = PERIPH_SSI0,
         .rxChannelBitMask = 1<<UDMA_CHAN_SSI0_RX,
         .txChannelBitMask = 1<<UDMA_CHAN_SSI0_TX,
+        .clkPin = Board_AFE_SCLK,
         .mosiPin = Board_AFE_MOSI,
         .misoPin = Board_AFE_MISO,
-        .clkPin = Board_AFE_SCLK,
         .csnPin = Board_AFE_CS
     },
     {   /* SRF06EB_CC2650_SPI1 */
@@ -188,10 +207,11 @@ const SPICC26XX_HWAttrs spiCC26XXDMAHWAttrs[CC2650_SPICOUNT] = {
         .powerMngrId = PERIPH_SSI1,
         .rxChannelBitMask  = 1<<UDMA_CHAN_SSI1_RX,
         .txChannelBitMask  = 1<<UDMA_CHAN_SSI1_TX,
-        .mosiPin = Board_DIAPLAY_MOSI,
-        .misoPin = PIN_UNASSIGNED,
         .clkPin = Board_DISPLAY_CLK,
-        .csnPin = Board_DISPLAY_CS
+        .mosiPin = Board_DISPLAY_MOSI,
+        .misoPin = Board_AFE_MISO,//PIN_UNASSIGNED, //Bug in TI-RTOS 2.13.00.06 causes PIN_UNASSIGNED to terminate. Fixed in 2.14.02.22
+        .csnPin = PIN_UNASSIGNED//was above for devboard
+		//For more info: https://e2e.ti.com/support/wireless_connectivity/bluetooth_low_energy/f/538/p/458678/1653566
     }
 };
 
