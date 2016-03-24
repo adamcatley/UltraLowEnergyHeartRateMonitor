@@ -66,8 +66,8 @@
 								<option id="com.ti.ccstudio.buildDefinitions.TMS470_5.2.compilerID.OPT_FOR_SPEED.1111670099" name="Speed vs. size trade-offs (--opt_for_speed, -mf)" superClass="com.ti.ccstudio.buildDefinitions.TMS470_5.2.compilerID.OPT_FOR_SPEED" value="com.ti.ccstudio.buildDefinitions.TMS470_5.2.compilerID.OPT_FOR_SPEED.0" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.TMS470_5.2.compilerID.INCLUDE_PATH.823457780" name="Add dir to #include search path (--include_path, -I)" superClass="com.ti.ccstudio.buildDefinitions.TMS470_5.2.compilerID.INCLUDE_PATH" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${CG_TOOL_ROOT}/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${PROJECT_LOC}\Startup&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ORG_PROJ_DIR}/../../../Source/Application&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PROJECT_LOC}\Application&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ORG_PROJ_DIR}/../../../../../../../Projects/ble/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ORG_PROJ_DIR}/../../../../../../../Projects/ble/ICall/Include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ORG_PROJ_DIR}/../../../../../../../Projects/ble/Profiles/Roles/CC26xx&quot;"/>

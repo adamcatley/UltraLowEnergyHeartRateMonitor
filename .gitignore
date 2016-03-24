@@ -34,4 +34,10 @@
 
 # Build Files
 FlashROM/
+src/
+
+#Config Files
 .config/
+.settings/
+.launches/
+*.prefs
